@@ -2,7 +2,7 @@ name: Scan Images for Vulnerabilities (Trivy)
 on:
   schedule:
     # TODO: Update this to run at `0 9 * * *` once we have a release.
-    - cron: "25 12 * * *" # Every day @ 09:00 UTC, run Trivy scans against main
+    - cron: "30 24 * * *" # Every day @ 09:00 UTC, run Trivy scans against main
   workflow_dispatch:
     inputs:
       version:
@@ -18,11 +18,11 @@ env:
 
 jobs:
   scan_vulnerabilities:
-    name: Scan for vulnerabilities ${{ github.event_name == 'schedule' && '(scheduled)' }}
+    name: Scan for vulnerabilities ${{ github.event_name == 'schedule' && '(scheduled)' || '' }}
     runs-on: ubuntu-latest
     env:
       # Scanning released versions requires the project `eraser-dev` as part of the repo name.
-      REGISTRY_POSTFIX: ${{ github.event.inputs.version == 'main' && '' || '/eraser-dev' }}
+      REGISTRY_POSTFIX: ${{ github.event.inputs.version == '' && '' || '/eraser-dev' }}
       TAG: ${{ github.event.inputs.version == '' && 'test' || github.event.inputs.version }}
     timeout-minutes: 15
     steps:
@@ -48,19 +48,19 @@ jobs:
         if: github.event.inputs.version == ''
         run: |
           echo "Build eraser-manager"
-          make docker-build-manager MANAGER_REPO=${{ env.REGISTRY }}/manager MANAGER_TAG=${{ env.TAG }}
+          make docker-build-manager MANAGER_REPO=${{ env.REGISTRY }}/eraser-manager MANAGER_TAG=${{ env.TAG }}
           echo "Build remover"
           make docker-build-remover REMOVER_REPO=${{ env.REGISTRY }}/remover REMOVER_TAG=${{ env.TAG }}
           echo "Build collector"
           make docker-build-collector COLLECTOR_REPO=${{ env.REGISTRY }}/collector COLLECTOR_TAG=${{ env.TAG }}
-          echo "Build trivy scanner"
-          make docker-build-trivy-scanner TRIVY_SCANNER_REPO=${{ env.REGISTRY }}/trivy-scanner TRIVY_SCANNER_TAG=${{ env.TAG }}
+          echo "Build trivy-scanner"
+          make docker-build-trivy-scanner TRIVY_SCANNER_REPO=${{ env.REGISTRY }}/eraser-trivy-scanner TRIVY_SCANNER_TAG=${{ env.TAG }}
 
       - name: Scan remover for vulnerabilities
         run: trivy image --ignore-unfixed --exit-code=1 --vuln-type=os,library ${{ env.REGISTRY }}${{ env.REGISTRY_POSTFIX }}/remover:${{ env.TAG }}
       - name: Scan eraser-manager for vulnerabilities
-        run: trivy image --ignore-unfixed --exit-code=1 --vuln-type=os,library ${{ env.REGISTRY }}${{ env.REGISTRY_POSTFIX }}/manager:${{ env.TAG }}
+        run: trivy image --ignore-unfixed --exit-code=1 --vuln-type=os,library ${{ env.REGISTRY }}${{ env.REGISTRY_POSTFIX }}/eraser-manager:${{ env.TAG }}
       - name: Scan collector for vulnerabilities
         run: trivy image --ignore-unfixed --exit-code=1 --vuln-type=os,library ${{ env.REGISTRY }}${{ env.REGISTRY_POSTFIX }}/collector:${{ env.TAG }}
       - name: Scan trivy-scanner for vulnerabilities
-        run: trivy image --ignore-unfixed --exit-code=1 --vuln-type=os,library ${{ env.REGISTRY }}${{ env.REGISTRY_POSTFIX }}/trivy-scanner:${{ env.TAG }}
+        run: trivy image --ignore-unfixed --exit-code=1 --vuln-type=os,library ${{ env.REGISTRY }}${{ env.REGISTRY_POSTFIX }}/eraser-trivy-scanner:${{ env.TAG }}
