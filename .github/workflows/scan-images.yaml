@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Scanning released versions requires the project `eraser-dev` as part of the repo name.
-      REGISTRY_POSTFIX: ${{ github.event.inputs.version == '' && '' || '/eraser-dev' }}
+      REGISTRY_POSTFIX: ${{ github.event.inputs.version != '' && '/eraser-dev' || '' }}
       TAG: ${{ github.event.inputs.version == '' && 'test' || github.event.inputs.version }}
     timeout-minutes: 15
     steps:
