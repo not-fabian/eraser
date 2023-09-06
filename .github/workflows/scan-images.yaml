@@ -8,7 +8,7 @@ on:
       version:
         description: "Version of Eraser to run Trivy scans against. Leave empty to scan images built from the branch the action is running against."
         type: string
-        required: true
+        required: false
         default: ""
 
 permissions: read-all
