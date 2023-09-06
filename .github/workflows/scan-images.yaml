@@ -2,7 +2,7 @@ name: Scan Images for Vulnerabilities (Trivy)
 on:
   schedule:
     # TODO: Update this to run at `0 9 * * *` once we have a release.
-    - cron: "30 24 * * *" # Every day @ 09:00 UTC, run Trivy scans against main
+    - cron: "30 0 * * *" # Every day @ 09:00 UTC, run Trivy scans against main
   workflow_dispatch:
     inputs:
       version:
