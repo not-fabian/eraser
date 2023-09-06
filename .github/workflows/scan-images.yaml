@@ -1,8 +1,7 @@
 name: Scan Images for Vulnerabilities (Trivy)
 on:
   schedule:
-    # TODO: Update this to run at `0 9 * * *` once we have a release.
-    - cron: "10 1 * * *" # Every day @ 09:00 UTC, run Trivy scans against main
+    - cron: "20 1 * * *" # Every day @ 09:00 UTC, run Trivy scans against main
   workflow_dispatch:
     inputs:
       version:
@@ -48,7 +47,7 @@ jobs:
           make docker-build-trivy-scanner TRIVY_SCANNER_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-trivy-scanner TRIVY_SCANNER_TAG=${{ env.TAG }}
 
       - name: Scan remover for vulnerabilities
-        uses: aquasecurity/trivy-action@v0.12.0
+        uses: aquasecurity/trivy-action@0.12.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/remover:${{ env.TAG }}
           vuln-type: 'os,library'
@@ -56,7 +55,7 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
       - name: Scan eraser-manager for vulnerabilities
-        uses: aquasecurity/trivy-action@v0.12.0
+        uses: aquasecurity/trivy-action@0.12.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-manager:${{ env.TAG }}
           vuln-type: 'os,library'
@@ -64,7 +63,7 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
       - name: Scan collector for vulnerabilities
-        uses: aquasecurity/trivy-action@v0.12.0
+        uses: aquasecurity/trivy-action@0.12.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/collector:${{ env.TAG }}
           vuln-type: 'os,library'
@@ -72,7 +71,7 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
       - name: Scan trivy-scanner for vulnerabilities
-        uses: aquasecurity/trivy-action@v0.12.0
+        uses: aquasecurity/trivy-action@0.12.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-trivy-scanner:${{ env.TAG }}
           vuln-type: 'os,library'
