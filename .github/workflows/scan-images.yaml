@@ -2,7 +2,7 @@ name: Scan Images for Vulnerabilities (Trivy)
 on:
   schedule:
     # TODO: Update this to run at `0 9 * * *` once we have a release.
-    - cron: "30 0 * * *" # Every day @ 09:00 UTC, run Trivy scans against main
+    - cron: "0 1 * * *" # Every day @ 09:00 UTC, run Trivy scans against main
   workflow_dispatch:
     inputs:
       version:
@@ -22,7 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Scanning released versions requires the project `eraser-dev` as part of the repo name.
-      REGISTRY_POSTFIX: ${{ github.event.inputs.version != '' && '/eraser-dev' || '' }}
+      # Doing this workaround to set the value as an empty string: https://github.com/actions/runner/issues/409#issuecomment-1554282497
+      REGISTRY_POSTFIX: ${{ fromJSON('["/eraser-dev", ""]')[github.event.inputs.version == ''] }}
       TAG: ${{ github.event.inputs.version == '' && 'test' || github.event.inputs.version }}
     timeout-minutes: 15
     steps:
