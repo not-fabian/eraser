@@ -1,5 +1,5 @@
 name: Scan Images for Vulnerabilities (Trivy)
-run-name: Scan ${{ inputs.version }} Images for Vulnerabilities (${{ github.event_name == 'schedule' && '(scheduled)' || '' }})
+run-name: Scan ${{ inputs.version }} Images for Vulnerabilities ${{ github.event_name == 'schedule' && '(scheduled)' || '' }}
 on:
   schedule:
     - cron: "0 9 * * *"
