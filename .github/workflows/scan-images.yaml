@@ -28,14 +28,11 @@ jobs:
     name: Scan ${{ matrix.data.image }} for vulnerabilities 
     strategy:
       matrix:
-        data: [
-          {image: remover, build_cmd: docker-build-remover, repo_environment_var: REMOVER_REPO}, 
-          {image: eraser-manager, build_cmd: docker-build-manager, repo_environment_var: MANAGER_REPO}, 
-          {image: collector, build_cmd: docker-build-collector, repo_environment_var: COLLECTOR_REPO}, 
-          {image: eraser-trivy-scanner, build_cmd: docker-build-trivy-scanner, repo_environment_var: TRIVY_SCANNER_REPO}
-        ]
-    # We scan for vulnerabilites after containers are built when scanning a branch (empty `version`).
-    needs: build_containers
+        data:
+          - {image: remover, build_cmd: docker-build-remover, repo_environment_var: REMOVER_REPO}
+          - {image: eraser-manager, build_cmd: docker-build-manager, repo_environment_var: MANAGER_REPO}
+          - {image: collector, build_cmd: docker-build-collector, repo_environment_var: COLLECTOR_REPO}
+          - {image: eraser-trivy-scanner, build_cmd: docker-build-trivy-scanner, repo_environment_var: TRIVY_SCANNER_REPO}
     # Due to the above `needs`, we need to do a conditional check to allow for runs that skipped 'build_containers' to run this job.
     # https://github.com/actions/runner/issues/491#issuecomment-850884422
     if: always() && (needs.build_containers.result == 'success' || needs.build_containers.result == 'skipped')
