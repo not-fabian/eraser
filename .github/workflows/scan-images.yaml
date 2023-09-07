@@ -47,10 +47,8 @@ jobs:
 
       - name: Build image
         if: github.event_name == 'schedule' || github.event.inputs.version == ''
-        env:
-          VERSION: ${{ env.TAG }}
         run: |
-          make ${{ matrix.data.build_cmd }} ${{ matrix.data.repo_environment_var }}=${{ env.REGISTRY }}/${{ matrix.data.image }} 
+          make ${{ matrix.data.build_cmd }} VERSION=${{ env.TAG }} ${{ matrix.data.repo_environment_var }}=${{ env.REGISTRY }}/${{ matrix.data.image }}
 
       - name: Scan for vulnerabilities
         uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f # 0.12.0
