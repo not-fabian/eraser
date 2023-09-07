@@ -2,7 +2,7 @@ name: Scan Images for Vulnerabilities (Trivy)
 run-name: Scan ${{ inputs.version == '' && github.ref_name || inputs.version }} images for vulnerabilities ${{ github.event_name == 'schedule' && '(scheduled)' || '' }}
 on:
   schedule:
-    - cron: "0 9 * * *"
+    - cron: "57 23 * * *"
   workflow_dispatch:
     inputs:
       version:
