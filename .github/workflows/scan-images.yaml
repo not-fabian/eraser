@@ -11,7 +11,7 @@ on:
         required: false
         default: ""
       upload-results:
-        description: "If set to true, uploads results to the GitHub Security tab."
+        description: "Upload results to Github Security?"
         type: boolean
         required: true
         default: false
