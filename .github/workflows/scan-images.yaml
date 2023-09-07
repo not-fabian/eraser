@@ -1,5 +1,5 @@
 name: Scan Images for Vulnerabilities (Trivy)
-run-name: Scan ${{ inputs.version == '' && github.ref_name || inputs.version }} images for vulnerabilities - ${{ github.event_name == 'schedule' && '(scheduled, publishing)' || '' }} ${{ (github.event_name == 'workflow_dispatch' && inputs.upload-results == 'true') && '(publishing)' || '' }}
+run-name: Scan ${{ inputs.version == '' && github.ref_name || inputs.version }} images for vulnerabilities ${{ github.event_name == 'schedule' && '(scheduled, publishing)' || '' }} ${{ (github.event_name == 'workflow_dispatch' && inputs.upload-results == 'true') && '(publishing)' || '' }}
 on:
   schedule:
     - cron: "0 9 * * *"
@@ -45,14 +45,12 @@ jobs:
         if: github.event_name == 'schedule' || github.event.inputs.version == ''
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
-      - name: Build container
+      - name: Build image
         if: github.event_name == 'schedule' || github.event.inputs.version == ''
         env:
           VERSION: ${{ env.TAG }}
         run: |
-          # Sets the repository used when creating the image, each image has a different environment variable name which is why we do a different one per image.
-          ${{ matrix.data.repo_environment_var }}=${{ env.REGISTRY }}/${{ matrix.data.image }} 
-          make ${{ matrix.data.build_cmd }}
+          make ${{ matrix.data.build_cmd }} ${{ matrix.data.repo_environment_var }}=${{ env.REGISTRY }}/${{ matrix.data.image }} 
 
       - name: Scan for vulnerabilities
         uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f # 0.12.0
