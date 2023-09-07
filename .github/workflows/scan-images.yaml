@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@8ca2b8b2ece13480cda6dacd3511b49857a23c09
+        uses: step-security/harden-runner@8ca2b8b2ece13480cda6dacd3511b49857a23c09 # v2.5.1
         with:
           egress-policy: audit
 
@@ -47,7 +47,7 @@ jobs:
           make docker-build-trivy-scanner TRIVY_SCANNER_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-trivy-scanner TRIVY_SCANNER_TAG=${{ env.TAG }}
 
       - name: Scan remover for vulnerabilities
-        uses: aquasecurity/trivy-action@0.12.0
+        uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f #0.12.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/remover:${{ env.TAG }}
           vuln-type: 'os,library'
@@ -55,7 +55,7 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
       - name: Scan eraser-manager for vulnerabilities
-        uses: aquasecurity/trivy-action@0.12.0
+        uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f #0.12.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-manager:${{ env.TAG }}
           vuln-type: 'os,library'
@@ -63,7 +63,7 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
       - name: Scan collector for vulnerabilities
-        uses: aquasecurity/trivy-action@0.12.0
+        uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f #0.12.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/collector:${{ env.TAG }}
           vuln-type: 'os,library'
@@ -71,7 +71,7 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
       - name: Scan trivy-scanner for vulnerabilities
-        uses: aquasecurity/trivy-action@0.12.0
+        uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f #0.12.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-trivy-scanner:${{ env.TAG }}
           vuln-type: 'os,library'
