@@ -1,7 +1,8 @@
 name: Scan Images for Vulnerabilities (Trivy)
+run-name: Scan Images for Vulnerabilities (${{ inputs.version == '' && 'main' || inputs.version }})
 on:
   schedule:
-    - cron: "25 1 * * *" # Every day @ 09:00 UTC, run Trivy scans against main
+    - cron: "0 9 * * *"
   workflow_dispatch:
     inputs:
       version:
@@ -9,20 +10,24 @@ on:
         type: string
         required: false
         default: ""
+      upload-results:
+        description: "If set to true, uploads results to the GitHub Security tab."
+        type: boolean
+        required: true
+        default: false
 
 permissions: read-all
 
 env:
   REGISTRY: ghcr.io
+  # Scanning released versions require the project `eraser-dev` as part of the repo name.
+  REGISTRY_POSTFIX: ${{ github.event.inputs.version == '' && 'eraser-test' || 'eraser-dev' }}
+  TAG: ${{ github.event.inputs.version == '' && 'test' || github.event.inputs.version }}
 
 jobs:
-  scan_vulnerabilities:
-    name: Scan for vulnerabilities ${{ github.event_name == 'schedule' && '(scheduled)' || '' }}
+  build_containers:
+    if: github.event_name == 'schedule' || github.event.inputs.version == ''
     runs-on: ubuntu-latest
-    env:
-      # Scanning RELEASED versions require the project `eraser-dev` as part of the repo name.
-      REGISTRY_POSTFIX: ${{ github.event.inputs.version == '' && 'eraser-test' || 'eraser-dev' }}
-      TAG: ${{ github.event.inputs.version == '' && 'test' || github.event.inputs.version }}
     timeout-minutes: 15
     steps:
       - name: Harden Runner
@@ -33,48 +38,55 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
-      - name: Build Containers
-        # We only build containers for runs wanting to scan against the running branch.
-        if: github.event.inputs.version == ''
-        run: |
-          echo "Build eraser-manager"
-          make docker-build-manager MANAGER_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-manager MANAGER_TAG=${{ env.TAG }}
-          echo "Build remover"
-          make docker-build-remover REMOVER_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/remover REMOVER_TAG=${{ env.TAG }}
-          echo "Build collector"
-          make docker-build-collector COLLECTOR_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/collector COLLECTOR_TAG=${{ env.TAG }}
-          echo "Build trivy-scanner"
-          make docker-build-trivy-scanner TRIVY_SCANNER_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-trivy-scanner TRIVY_SCANNER_TAG=${{ env.TAG }}
+      - name: Build eraser-manager
+        run: docker-build-manager MANAGER_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-manager MANAGER_TAG=${{ env.TAG }}
 
-      - name: Scan remover for vulnerabilities
+      - name: Build remover
+        run: make docker-build-remover REMOVER_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/remover REMOVER_TAG=${{ env.TAG }}
+
+      - name: Build collector
+        run: make docker-build-collector COLLECTOR_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/collector COLLECTOR_TAG=${{ env.TAG }}
+
+      - name: Build trivy-scanner
+        run: make docker-build-trivy-scanner TRIVY_SCANNER_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-trivy-scanner TRIVY_SCANNER_TAG=${{ env.TAG }}
+
+  scan_vulnerabilities:
+    name: Scan for vulnerabilities ${{ github.event_name == 'schedule' && '(scheduled)' || '' }}
+    needs: build_containers
+    runs-on: ubuntu-latest      
+    timeout-minutes: 15
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@8ca2b8b2ece13480cda6dacd3511b49857a23c09 # v2.5.1
+        with:
+          egress-policy: audit
+
+      - name: Scan ${{ matrix.image }} for vulnerabilities
+        strategy:
+          matrix:
+            image: [remover, eraser-manager, collector, eraser-trivy-scanner]
         uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f #0.12.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/remover:${{ env.TAG }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/${{ matrix.image }}:${{ env.TAG }}
           vuln-type: 'os,library'
-          format: 'table'
           ignore-unfixed: true
-          exit-code: 1
-      - name: Scan eraser-manager for vulnerabilities
-        uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f #0.12.0
+          format: 'sarif'
+          output: ${{ matrix.image }}-results.sarif
+ 
+  upload_vulnerabilities:
+    name: Upload Results to GitHub Security
+    needs: scan_vulnerabilities
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.upload-results == 'true')
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@8ca2b8b2ece13480cda6dacd3511b49857a23c09 # v2.5.1
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-manager:${{ env.TAG }}
-          vuln-type: 'os,library'
-          format: 'table'
-          ignore-unfixed: true
-          exit-code: 1
-      - name: Scan collector for vulnerabilities
-        uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f #0.12.0
+          egress-policy: audit
+
+      - name: Upload ${{ matrix.image }} results to GitHub Security
+        strategy:
+          matrix:
+            image: [remover, eraser-manager, collector, eraser-trivy-scanner]
+        uses: github/codeql-action/upload-sarif@v2
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/collector:${{ env.TAG }}
-          vuln-type: 'os,library'
-          format: 'table'
-          ignore-unfixed: true
-          exit-code: 1
-      - name: Scan trivy-scanner for vulnerabilities
-        uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f #0.12.0
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-trivy-scanner:${{ env.TAG }}
-          vuln-type: 'os,library'
-          format: 'table'
-          ignore-unfixed: true
-          exit-code: 1
+          sarif_file: ${{ matrix.image }}-results.sarif
