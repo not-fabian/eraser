@@ -57,8 +57,9 @@ jobs:
         image: [remover, eraser-manager, collector, eraser-trivy-scanner]
     # We scan for vulnerabilites after containers are built when scanning a branch (empty `version`).
     needs: build_containers
-    # Due to the above `needs`, we need to do a conditional check to allow for runs that skipped 'build_containers' to run this job. 
-    if: needs.build_containers.result == 'success' || needs.build_containers.result == 'skipped'
+    # Due to the above `needs`, we need to do a conditional check to allow for runs that skipped 'build_containers' to run this job.
+    # https://github.com/actions/runner/issues/491#issuecomment-850884422
+    if: always() && (needs.build_containers.result == 'success' || needs.build_containers.result == 'skipped')
     runs-on: ubuntu-latest      
     timeout-minutes: 15
     steps:
