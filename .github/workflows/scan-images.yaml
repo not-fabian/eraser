@@ -26,6 +26,8 @@ env:
 jobs:
   scan_vulnerabilities:
     name: Scan ${{ matrix.data.image }} for vulnerabilities 
+    runs-on: ubuntu-latest      
+    timeout-minutes: 15
     strategy:
       matrix:
         data:
@@ -33,11 +35,6 @@ jobs:
           - {image: eraser-manager, build_cmd: docker-build-manager, repo_environment_var: MANAGER_REPO}
           - {image: collector, build_cmd: docker-build-collector, repo_environment_var: COLLECTOR_REPO}
           - {image: eraser-trivy-scanner, build_cmd: docker-build-trivy-scanner, repo_environment_var: TRIVY_SCANNER_REPO}
-    # Due to the above `needs`, we need to do a conditional check to allow for runs that skipped 'build_containers' to run this job.
-    # https://github.com/actions/runner/issues/491#issuecomment-850884422
-    if: always() && (needs.build_containers.result == 'success' || needs.build_containers.result == 'skipped')
-    runs-on: ubuntu-latest      
-    timeout-minutes: 15
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@8ca2b8b2ece13480cda6dacd3511b49857a23c09 # v2.5.1
