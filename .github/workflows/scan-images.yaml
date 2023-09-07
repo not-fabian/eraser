@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
       - name: Build eraser-manager
-        run: docker-build-manager MANAGER_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-manager MANAGER_TAG=${{ env.TAG }}
+        run: make docker-build-manager MANAGER_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/eraser-manager MANAGER_TAG=${{ env.TAG }}
 
       - name: Build remover
         run: make docker-build-remover REMOVER_REPO=${{ env.REGISTRY }}/${{ env.REGISTRY_POSTFIX }}/remover REMOVER_TAG=${{ env.TAG }}
@@ -55,7 +55,10 @@ jobs:
     strategy:
       matrix:
         image: [remover, eraser-manager, collector, eraser-trivy-scanner]
+    # We scan for vulnerabilites after containers are built when scanning a branch (empty `version`).
     needs: build_containers
+    # Due to the above `needs`, we need to do a conditional check to allow for runs that skipped 'build_containers' to run this job. 
+    if: needs.build_containers.result == 'success' || needs.build_containers.result == 'skipped'
     runs-on: ubuntu-latest      
     timeout-minutes: 15
     steps:
